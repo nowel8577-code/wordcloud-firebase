@@ -20,7 +20,7 @@
     /* ── Header ── */
     header {
       text-align: center;
-      padding: 22px 20px 18px;
+      padding: 18px 20px 14px;
       color: white;
     }
     header h1 {
@@ -58,6 +58,7 @@
       display: flex;
       flex-direction: column;
       gap: 14px;
+      overflow-y: auto;
     }
 
     .card {
@@ -65,6 +66,7 @@
       border-radius: 16px;
       padding: 20px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+      flex-shrink: 0;
     }
     .card-title {
       font-size: 0.9em;
@@ -126,6 +128,34 @@
     }
     .toast.ok  { background: #dcfce7; color: #16a34a; display: block; }
     .toast.err { background: #fee2e2; color: #dc2626; display: block; }
+
+    /* QR Code card */
+    .qr-inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .qr-box {
+      border: 3px solid #f97316;
+      border-radius: 12px;
+      padding: 8px;
+      background: white;
+      display: inline-block;
+      line-height: 0;
+    }
+    .qr-hint {
+      font-size: 0.82em;
+      color: #888;
+      text-align: center;
+      line-height: 1.5;
+    }
+    .qr-url {
+      font-size: 0.65em;
+      color: #bbb;
+      text-align: center;
+      word-break: break-all;
+    }
 
     /* Ranking */
     .rank-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
@@ -198,37 +228,10 @@
     }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
 
-    /* QR Code card */
-    .qr-inner {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
-    }
-    .qr-box {
-      background: white;
-      border: 3px solid #f97316;
-      border-radius: 12px;
-      padding: 10px;
-      display: inline-block;
-    }
-    .qr-hint {
-      font-size: 0.8em;
-      color: #888;
-      text-align: center;
-      line-height: 1.5;
-    }
-    .qr-url {
-      font-size: 0.68em;
-      color: #bbb;
-      text-align: center;
-      word-break: break-all;
-    }
-
     /* Responsive: mobile → stack vertically */
     @media (max-width: 680px) {
       main { flex-direction: column; }
-      .left { width: 100%; }
+      .left { width: 100%; overflow-y: visible; }
       .cloud-card { min-height: 320px; }
     }
   </style>
@@ -273,7 +276,7 @@
       <div class="card-title">📱 掃碼參與</div>
       <div class="qr-inner">
         <div class="qr-box" id="qrcode"></div>
-        <div class="qr-hint">用手機掃描<br>輸入你的關鍵字</div>
+        <div class="qr-hint">用手機掃描<br>即可輸入關鍵字</div>
         <div class="qr-url" id="qrUrl"></div>
       </div>
     </div>
@@ -305,23 +308,28 @@
   </div>
 </main>
 
+<script>
+  // QR Code 產生（普通 script，不是 module）
+  (function() {
+    var url = window.location.href.indexOf('github.io') !== -1
+      ? 'https://nowel8577-code.github.io/wordcloud-firebase/'
+      : window.location.href.split('?')[0].replace('display.html','index.html');
+    document.getElementById('qrUrl').textContent = url;
+    new QRCode(document.getElementById('qrcode'), {
+      text: url,
+      width: 160,
+      height: 160,
+      colorDark: '#f97316',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+  })();
+</script>
+
 <script type="module">
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
   import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp }
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-
-  // ── QR Code ──
-  const INPUT_URL = window.location.origin.includes('github.io')
-    ? 'https://nowel8577-code.github.io/wordcloud-firebase/'
-    : window.location.href.split('?')[0];
-  document.getElementById('qrUrl').textContent = INPUT_URL;
-  new QRCode(document.getElementById('qrcode'), {
-    text: INPUT_URL,
-    width: 140, height: 140,
-    colorDark: '#f97316',
-    colorLight: '#ffffff',
-    correctLevel: QRCode.CorrectLevel.M
-  });
 
   const app = initializeApp({
     apiKey: "AIzaSyA0HmfkjwykzJ4JyIqlhKUmMCKc9o6gdyY",
