@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>即時文字雲（Firebase 版）</title>
   <script src="https://cdn.jsdelivr.net/npm/wordcloud@1.2.2/src/wordcloud2.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -197,6 +198,33 @@
     }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
 
+    /* QR Code card */
+    .qr-inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .qr-box {
+      background: white;
+      border: 3px solid #f97316;
+      border-radius: 12px;
+      padding: 10px;
+      display: inline-block;
+    }
+    .qr-hint {
+      font-size: 0.8em;
+      color: #888;
+      text-align: center;
+      line-height: 1.5;
+    }
+    .qr-url {
+      font-size: 0.68em;
+      color: #bbb;
+      text-align: center;
+      word-break: break-all;
+    }
+
     /* Responsive: mobile → stack vertically */
     @media (max-width: 680px) {
       main { flex-direction: column; }
@@ -240,6 +268,16 @@
       <div class="toast" id="toast"></div>
     </div>
 
+    <!-- QR Code card -->
+    <div class="card">
+      <div class="card-title">📱 掃碼參與</div>
+      <div class="qr-inner">
+        <div class="qr-box" id="qrcode"></div>
+        <div class="qr-hint">用手機掃描<br>輸入你的關鍵字</div>
+        <div class="qr-url" id="qrUrl"></div>
+      </div>
+    </div>
+
     <!-- Ranking card -->
     <div class="card">
       <div class="card-title">🏆 排行榜</div>
@@ -271,6 +309,19 @@
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
   import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp }
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+  // ── QR Code ──
+  const INPUT_URL = window.location.origin.includes('github.io')
+    ? 'https://nowel8577-code.github.io/wordcloud-firebase/'
+    : window.location.href.split('?')[0];
+  document.getElementById('qrUrl').textContent = INPUT_URL;
+  new QRCode(document.getElementById('qrcode'), {
+    text: INPUT_URL,
+    width: 140, height: 140,
+    colorDark: '#f97316',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
 
   const app = initializeApp({
     apiKey: "AIzaSyA0HmfkjwykzJ4JyIqlhKUmMCKc9o6gdyY",
