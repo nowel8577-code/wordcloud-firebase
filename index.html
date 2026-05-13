@@ -3,102 +3,273 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>📝 文字雲輸入</title>
+  <title>即時文字雲（Firebase 版）</title>
+  <script src="https://cdn.jsdelivr.net/npm/wordcloud@1.2.2/src/wordcloud2.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
+      background: linear-gradient(135deg, #f97316 0%, #ef4444 100%);
       min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      text-align: center;
+      padding: 22px 20px 18px;
+      color: white;
+    }
+    header h1 {
+      font-size: 2em;
+      font-weight: 700;
       display: flex;
       align-items: center;
       justify-content: center;
+      gap: 10px;
     }
+    .badge {
+      font-size: 0.45em;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-weight: 700;
+      vertical-align: middle;
+    }
+    .badge-live { background: #22c55e; color: white; }
+    .badge-fb   { background: #1877f2; color: white; }
+    header p { font-size: 0.95em; opacity: 0.9; margin-top: 4px; }
+
+    /* ── Main layout ── */
+    main {
+      flex: 1;
+      display: flex;
+      gap: 16px;
+      padding: 0 16px 16px;
+      min-height: 0;
+    }
+
+    /* ── Left panel ── */
+    .left {
+      width: 280px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
     .card {
       background: white;
-      border-radius: 20px;
-      padding: 40px;
-      max-width: 480px;
-      width: 90%;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-      text-align: center;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.12);
     }
-    h1 { font-size: 1.8em; color: #333; margin-bottom: 8px; }
-    .subtitle { color: #888; margin-bottom: 30px; font-size: 0.95em; }
-    .question {
-      background: #f8f4ff;
-      border-left: 4px solid #764ba2;
-      padding: 16px 20px;
-      border-radius: 8px;
-      text-align: left;
-      margin-bottom: 24px;
-      font-size: 1.1em;
-      color: #333;
-      font-weight: 500;
+    .card-title {
+      font-size: 0.9em;
+      font-weight: 700;
+      color: #555;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
-    .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; min-height: 40px; }
-    .tag {
-      background: #764ba2; color: white;
-      padding: 6px 14px; border-radius: 20px;
-      font-size: 0.9em; display: flex; align-items: center; gap: 6px;
+
+    /* Input */
+    .input-row { display: flex; gap: 8px; }
+    .input-row input {
+      flex: 1;
+      padding: 10px 14px;
+      border: 2px solid #e5e7eb;
+      border-radius: 10px;
+      font-size: 1em;
+      outline: none;
     }
-    .tag button { background: none; border: none; color: white; cursor: pointer; font-size: 1em; }
-    .input-row { display: flex; gap: 10px; margin-bottom: 20px; }
-    input[type="text"] {
-      flex: 1; padding: 12px 16px;
-      border: 2px solid #e0e0e0; border-radius: 10px;
-      font-size: 1em; outline: none; transition: border-color 0.2s;
-    }
-    input[type="text"]:focus { border-color: #764ba2; }
-    .btn-add {
-      background: #764ba2; color: white; border: none;
-      padding: 12px 20px; border-radius: 10px; cursor: pointer; font-size: 1em;
-    }
+    .input-row input:focus { border-color: #f97316; }
     .btn-submit {
-      width: 100%;
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      color: white; border: none; padding: 14px;
-      border-radius: 12px; font-size: 1.1em; cursor: pointer; font-weight: 600;
+      background: #ef4444;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 1em;
+      font-weight: 600;
+      white-space: nowrap;
     }
     .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
-    .status { margin-top: 16px; padding: 12px; border-radius: 8px; font-size: 0.95em; display: none; }
-    .status.success { background: #e8f5e9; color: #2e7d32; display: block; }
-    .status.error { background: #ffebee; color: #c62828; display: block; }
-    .hint { font-size: 0.8em; color: #aaa; margin-bottom: 8px; }
-    .display-link {
-      margin-top: 20px; padding-top: 20px;
-      border-top: 1px solid #f0f0f0;
-      font-size: 0.85em; color: #aaa;
+
+    /* Stats */
+    .stats-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 14px;
     }
-    .display-link a { color: #764ba2; text-decoration: none; }
+    .stat-box {
+      flex: 1;
+      text-align: center;
+      background: #fff7ed;
+      border-radius: 10px;
+      padding: 10px;
+    }
+    .stat-num { font-size: 1.8em; font-weight: 700; color: #f97316; }
+    .stat-label { font-size: 0.72em; color: #999; margin-top: 2px; }
+
+    /* Toast */
+    .toast {
+      margin-top: 10px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.85em;
+      display: none;
+    }
+    .toast.ok  { background: #dcfce7; color: #16a34a; display: block; }
+    .toast.err { background: #fee2e2; color: #dc2626; display: block; }
+
+    /* Ranking */
+    .rank-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .rank-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.9em;
+    }
+    .rank-num {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: #f97316;
+      color: white;
+      font-size: 0.78em;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .rank-num.gold   { background: #f59e0b; }
+    .rank-num.silver { background: #9ca3af; }
+    .rank-num.bronze { background: #b45309; }
+    .rank-word { flex: 1; color: #333; font-weight: 500; }
+    .rank-count {
+      background: #fff7ed;
+      color: #f97316;
+      font-weight: 700;
+      font-size: 0.82em;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+    .empty-rank { color: #bbb; font-size: 0.85em; text-align: center; padding: 10px 0; }
+
+    /* ── Right panel (word cloud) ── */
+    .right {
+      flex: 1;
+      min-width: 0;
+    }
+    .cloud-card {
+      background: white;
+      border-radius: 16px;
+      padding: 16px;
+      height: 100%;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+      display: flex;
+      flex-direction: column;
+    }
+    .cloud-card .card-title { margin-bottom: 8px; }
+    #canvas-wrap {
+      flex: 1;
+      position: relative;
+      min-height: 300px;
+    }
+    canvas { display: block; }
+    .cloud-empty {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%,-50%);
+      text-align: center; color: #ddd;
+    }
+    .cloud-empty .icon { font-size: 3em; margin-bottom: 8px; }
+    .cloud-empty p { font-size: 0.9em; }
+
+    /* live dot */
+    .live-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      background: #22c55e; border-radius: 50%;
+      margin-right: 4px;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+    /* Responsive: mobile → stack vertically */
+    @media (max-width: 680px) {
+      main { flex-direction: column; }
+      .left { width: 100%; }
+      .cloud-card { min-height: 320px; }
+    }
   </style>
 </head>
 <body>
-<div class="card">
-  <h1>📝 文字雲投票</h1>
-  <p class="subtitle">輸入你的關鍵字，即時顯示在大螢幕上</p>
 
-  <div class="question">今天課程中，你印象最深刻的是什麼？</div>
+<header>
+  <h1>
+    ☁️ 即時文字雲
+    <span class="badge badge-live">LIVE</span>
+    <span class="badge badge-fb">Firebase</span>
+  </h1>
+  <p>輸入關鍵字，全班即時看到結果</p>
+</header>
 
-  <p class="hint">輸入關鍵字後按「＋新增」，可加入多個詞（最多 5 個）</p>
-  <div class="tags" id="tags"></div>
+<main>
+  <!-- Left -->
+  <div class="left">
 
-  <div class="input-row">
-    <input type="text" id="wordInput" placeholder="輸入關鍵字..." maxlength="20">
-    <button class="btn-add" onclick="addTag()">＋ 新增</button>
+    <!-- Input card -->
+    <div class="card">
+      <div class="card-title">✏️ 提交關鍵字</div>
+      <div class="input-row">
+        <input type="text" id="wordInput" placeholder="輸入關鍵字..." maxlength="20">
+        <button class="btn-submit" id="submitBtn" onclick="submitWord()">提交</button>
+      </div>
+      <div class="stats-row">
+        <div class="stat-box">
+          <div class="stat-num" id="totalCount">0</div>
+          <div class="stat-label">提交次數</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num" id="uniqueCount">0</div>
+          <div class="stat-label">不同關鍵字</div>
+        </div>
+      </div>
+      <div class="toast" id="toast"></div>
+    </div>
+
+    <!-- Ranking card -->
+    <div class="card">
+      <div class="card-title">🏆 排行榜</div>
+      <ul class="rank-list" id="rankList">
+        <li class="empty-rank">還沒有資料</li>
+      </ul>
+    </div>
+
   </div>
 
-  <button class="btn-submit" id="submitBtn" onclick="submitWords()">送出 🚀</button>
-  <div class="status" id="status"></div>
-
-  <div class="display-link">
-    老師展示頁：<a href="display.html" target="_blank">display.html</a>
+  <!-- Right: word cloud -->
+  <div class="right">
+    <div class="cloud-card">
+      <div class="card-title">
+        <span class="live-dot"></span>文字雲展示
+      </div>
+      <div id="canvas-wrap">
+        <div class="cloud-empty" id="cloudEmpty">
+          <div class="icon">🌫️</div>
+          <p>等待關鍵字…</p>
+        </div>
+        <canvas id="cloud"></canvas>
+      </div>
+    </div>
   </div>
-</div>
+</main>
 
 <script type="module">
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-  import { getFirestore, collection, addDoc, serverTimestamp }
+  import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp }
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
   const app = initializeApp({
@@ -110,43 +281,110 @@
     appId: "1:768803476729:web:8463219b03f9312ac5fe28"
   });
   const db = getFirestore(app);
-  window.tags = [];
 
-  window.addTag = function() {
+  const COLORS = ['#f97316','#ef4444','#8b5cf6','#3b82f6','#10b981',
+                  '#f59e0b','#ec4899','#06b6d4','#84cc16','#6366f1'];
+
+  let wordMap = {};
+  let renderTimer = null;
+
+  // ── Submit ──
+  window.submitWord = async function() {
     const input = document.getElementById('wordInput');
     const word = input.value.trim();
     if (!word) return;
-    if (window.tags.includes(word)) { input.value = ''; return; }
-    if (window.tags.length >= 5) { alert('最多輸入 5 個關鍵字'); return; }
-    window.tags.push(word);
-    renderTags(); input.value = ''; input.focus();
-  };
-  window.removeTag = function(i) { window.tags.splice(i, 1); renderTags(); };
-  function renderTags() {
-    document.getElementById('tags').innerHTML = window.tags.map((t, i) =>
-      `<span class="tag">${t}<button onclick="removeTag(${i})">✕</button></span>`
-    ).join('');
-  }
-  window.submitWords = async function() {
-    if (!window.tags.length) { alert('請先輸入至少一個關鍵字'); return; }
+
     const btn = document.getElementById('submitBtn');
-    const status = document.getElementById('status');
-    btn.disabled = true; btn.textContent = '送出中...';
+    const toast = document.getElementById('toast');
+    btn.disabled = true;
+    btn.textContent = '送出中…';
+
     try {
-      for (const word of window.tags)
-        await addDoc(collection(db, 'wordcloud_words'), { word, submitted_at: serverTimestamp() });
-      status.className = 'status success';
-      status.textContent = '✅ 送出成功！你的關鍵字已出現在文字雲上';
-      window.tags = []; renderTags();
-      btn.textContent = '再次送出 🚀'; btn.disabled = false;
+      await addDoc(collection(db, 'wordcloud_words'), {
+        word, submitted_at: serverTimestamp()
+      });
+      toast.className = 'toast ok';
+      toast.textContent = `✅「${word}」已送出！`;
+      input.value = '';
     } catch(e) {
-      status.className = 'status error';
-      status.textContent = '❌ 失敗：' + e.message;
-      btn.disabled = false; btn.textContent = '送出 🚀';
+      toast.className = 'toast err';
+      toast.textContent = '❌ 失敗：' + e.message;
     }
+    btn.disabled = false;
+    btn.textContent = '提交';
+    input.focus();
+    setTimeout(() => toast.className = 'toast', 3000);
   };
+
   document.getElementById('wordInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter') window.addTag();
+    if (e.key === 'Enter') window.submitWord();
+  });
+
+  // ── Word cloud render ──
+  function renderCloud() {
+    const canvas = document.getElementById('cloud');
+    const wrap = document.getElementById('canvas-wrap');
+    canvas.width  = wrap.offsetWidth;
+    canvas.height = wrap.offsetHeight;
+
+    const list = Object.entries(wordMap).sort((a,b) => b[1]-a[1]);
+    const max  = list[0]?.[1] || 1;
+
+    document.getElementById('cloudEmpty').style.display = list.length ? 'none' : 'flex';
+    if (!list.length) return;
+
+    WordCloud(canvas, {
+      list: list.map(([word, count]) => [
+        word, Math.max(16, Math.round(16 + (count/max) * 80))
+      ]),
+      gridSize: 8,
+      fontFamily: 'Segoe UI, Microsoft JhengHei, sans-serif',
+      color: (word) => {
+        const i = list.findIndex(([w]) => w === word);
+        return COLORS[i % COLORS.length];
+      },
+      rotateRatio: 0.2,
+      backgroundColor: 'transparent',
+      drawOutOfBound: false,
+    });
+  }
+
+  // ── Ranking ──
+  function renderRank() {
+    const list = Object.entries(wordMap).sort((a,b) => b[1]-a[1]).slice(0, 10);
+    const el = document.getElementById('rankList');
+    if (!list.length) {
+      el.innerHTML = '<li class="empty-rank">還沒有資料</li>';
+      return;
+    }
+    const medalClass = ['gold','silver','bronze'];
+    el.innerHTML = list.map(([word, count], i) => `
+      <li class="rank-item">
+        <span class="rank-num ${medalClass[i]||''}">${i+1}</span>
+        <span class="rank-word">${word}</span>
+        <span class="rank-count">${count}</span>
+      </li>
+    `).join('');
+  }
+
+  // ── Firestore listener ──
+  onSnapshot(collection(db, 'wordcloud_words'), (snap) => {
+    wordMap = {};
+    let total = 0;
+    snap.forEach(doc => {
+      const w = doc.data().word;
+      if (w) { wordMap[w] = (wordMap[w]||0)+1; total++; }
+    });
+    document.getElementById('totalCount').textContent  = total;
+    document.getElementById('uniqueCount').textContent = Object.keys(wordMap).length;
+    renderRank();
+    clearTimeout(renderTimer);
+    renderTimer = setTimeout(renderCloud, 300);
+  });
+
+  window.addEventListener('resize', () => {
+    clearTimeout(renderTimer);
+    renderTimer = setTimeout(renderCloud, 200);
   });
 </script>
 </body>
