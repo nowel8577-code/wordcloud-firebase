@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>即時文字雲（Firebase 版）</title>
   <script src="https://cdn.jsdelivr.net/npm/wordcloud@1.2.2/src/wordcloud2.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -275,9 +274,14 @@
     <div class="card">
       <div class="card-title">📱 掃碼參與</div>
       <div class="qr-inner">
-        <div class="qr-box" id="qrcode"></div>
+        <div class="qr-box">
+          <img id="qrImg"
+               src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=https%3A%2F%2Fnowel8577-code.github.io%2Fwordcloud-firebase%2F&color=f97316&bgcolor=ffffff"
+               width="160" height="160" alt="QR Code"
+               style="display:block;border-radius:6px;">
+        </div>
         <div class="qr-hint">用手機掃描<br>即可輸入關鍵字</div>
-        <div class="qr-url" id="qrUrl"></div>
+        <div class="qr-url">nowel8577-code.github.io/wordcloud-firebase/</div>
       </div>
     </div>
 
@@ -308,23 +312,6 @@
   </div>
 </main>
 
-<script>
-  // QR Code 產生（普通 script，不是 module）
-  (function() {
-    var url = window.location.href.indexOf('github.io') !== -1
-      ? 'https://nowel8577-code.github.io/wordcloud-firebase/'
-      : window.location.href.split('?')[0].replace('display.html','index.html');
-    document.getElementById('qrUrl').textContent = url;
-    new QRCode(document.getElementById('qrcode'), {
-      text: url,
-      width: 160,
-      height: 160,
-      colorDark: '#f97316',
-      colorLight: '#ffffff',
-      correctLevel: QRCode.CorrectLevel.M
-    });
-  })();
-</script>
 
 <script type="module">
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
