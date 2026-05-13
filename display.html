@@ -95,7 +95,9 @@
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
   // 學生輸入頁網址（GitHub Pages 部署後會是這個）
-  const INPUT_URL = window.location.origin + (window.location.pathname.replace('display.html','') || '/') + 'index.html';
+  const INPUT_URL = window.location.origin.includes('github.io')
+    ? 'https://nowel8577-code.github.io/wordcloud-firebase/'
+    : window.location.origin + (window.location.pathname.replace('display.html','') || '/') + 'index.html';
   document.getElementById('urlText').textContent = INPUT_URL;
   new QRCode(document.getElementById('qrcode'), {
     text: INPUT_URL, width: 148, height: 148,
