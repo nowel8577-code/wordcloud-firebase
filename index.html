@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📝 文字雲輸入</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 480px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      text-align: center;
+    }
+    h1 { font-size: 1.8em; color: #333; margin-bottom: 8px; }
+    .subtitle { color: #888; margin-bottom: 30px; font-size: 0.95em; }
+    .question {
+      background: #f8f4ff;
+      border-left: 4px solid #764ba2;
+      padding: 16px 20px;
+      border-radius: 8px;
+      text-align: left;
+      margin-bottom: 24px;
+      font-size: 1.1em;
+      color: #333;
+      font-weight: 500;
+    }
+    .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; min-height: 40px; }
+    .tag {
+      background: #764ba2; color: white;
+      padding: 6px 14px; border-radius: 20px;
+      font-size: 0.9em; display: flex; align-items: center; gap: 6px;
+    }
+    .tag button { background: none; border: none; color: white; cursor: pointer; font-size: 1em; }
+    .input-row { display: flex; gap: 10px; margin-bottom: 20px; }
+    input[type="text"] {
+      flex: 1; padding: 12px 16px;
+      border: 2px solid #e0e0e0; border-radius: 10px;
+      font-size: 1em; outline: none; transition: border-color 0.2s;
+    }
+    input[type="text"]:focus { border-color: #764ba2; }
+    .btn-add {
+      background: #764ba2; color: white; border: none;
+      padding: 12px 20px; border-radius: 10px; cursor: pointer; font-size: 1em;
+    }
+    .btn-submit {
+      width: 100%;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white; border: none; padding: 14px;
+      border-radius: 12px; font-size: 1.1em; cursor: pointer; font-weight: 600;
+    }
+    .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+    .status { margin-top: 16px; padding: 12px; border-radius: 8px; font-size: 0.95em; display: none; }
+    .status.success { background: #e8f5e9; color: #2e7d32; display: block; }
+    .status.error { background: #ffebee; color: #c62828; display: block; }
+    .hint { font-size: 0.8em; color: #aaa; margin-bottom: 8px; }
+    .display-link {
+      margin-top: 20px; padding-top: 20px;
+      border-top: 1px solid #f0f0f0;
+      font-size: 0.85em; color: #aaa;
+    }
+    .display-link a { color: #764ba2; text-decoration: none; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h1>📝 文字雲投票</h1>
+  <p class="subtitle">輸入你的關鍵字，即時顯示在大螢幕上</p>
+
+  <div class="question">今天課程中，你印象最深刻的是什麼？</div>
+
+  <p class="hint">輸入關鍵字後按「＋新增」，可加入多個詞（最多 5 個）</p>
+  <div class="tags" id="tags"></div>
+
+  <div class="input-row">
+    <input type="text" id="wordInput" placeholder="輸入關鍵字..." maxlength="20">
+    <button class="btn-add" onclick="addTag()">＋ 新增</button>
+  </div>
+
+  <button class="btn-submit" id="submitBtn" onclick="submitWords()">送出 🚀</button>
+  <div class="status" id="status"></div>
+
+  <div class="display-link">
+    老師展示頁：<a href="display.html" target="_blank">display.html</a>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+  import { getFirestore, collection, addDoc, serverTimestamp }
+    from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+  const app = initializeApp({
+    apiKey: "AIzaSyA0HmfkjwykzJ4JyIqlhKUmMCKc9o6gdyY",
+    authDomain: "teacherstudy-38c15.firebaseapp.com",
+    projectId: "teacherstudy-38c15",
+    storageBucket: "teacherstudy-38c15.firebasestorage.app",
+    messagingSenderId: "768803476729",
+    appId: "1:768803476729:web:8463219b03f9312ac5fe28"
+  });
+  const db = getFirestore(app);
+  window.tags = [];
+
+  window.addTag = function() {
+    const input = document.getElementById('wordInput');
+    const word = input.value.trim();
+    if (!word) return;
+    if (window.tags.includes(word)) { input.value = ''; return; }
+    if (window.tags.length >= 5) { alert('最多輸入 5 個關鍵字'); return; }
+    window.tags.push(word);
+    renderTags(); input.value = ''; input.focus();
+  };
+  window.removeTag = function(i) { window.tags.splice(i, 1); renderTags(); };
+  function renderTags() {
+    document.getElementById('tags').innerHTML = window.tags.map((t, i) =>
+      `<span class="tag">${t}<button onclick="removeTag(${i})">✕</button></span>`
+    ).join('');
+  }
+  window.submitWords = async function() {
+    if (!window.tags.length) { alert('請先輸入至少一個關鍵字'); return; }
+    const btn = document.getElementById('submitBtn');
+    const status = document.getElementById('status');
+    btn.disabled = true; btn.textContent = '送出中...';
+    try {
+      for (const word of window.tags)
+        await addDoc(collection(db, 'wordcloud_words'), { word, submitted_at: serverTimestamp() });
+      status.className = 'status success';
+      status.textContent = '✅ 送出成功！你的關鍵字已出現在文字雲上';
+      window.tags = []; renderTags();
+      btn.textContent = '再次送出 🚀'; btn.disabled = false;
+    } catch(e) {
+      status.className = 'status error';
+      status.textContent = '❌ 失敗：' + e.message;
+      btn.disabled = false; btn.textContent = '送出 🚀';
+    }
+  };
+  document.getElementById('wordInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') window.addTag();
+  });
+</script>
+</body>
+</html>

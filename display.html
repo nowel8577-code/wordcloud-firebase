@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>☁️ 即時文字雲展示</title>
+  <script src="https://cdn.jsdelivr.net/npm/wordcloud@1.2.2/src/wordcloud2.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #1a1a2e; color: white;
+      font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
+      height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+    }
+    header {
+      padding: 14px 24px;
+      background: rgba(255,255,255,0.05);
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid rgba(255,255,255,0.1); flex-shrink: 0;
+    }
+    header h1 { font-size: 1.3em; }
+    .stats { display: flex; gap: 24px; font-size: 0.9em; color: rgba(255,255,255,0.65); }
+    .stats strong { color: #a78bfa; font-size: 1.15em; }
+    .main { flex: 1; display: flex; overflow: hidden; }
+    #canvas-wrap { flex: 1; position: relative; }
+    canvas { display: block; }
+    .empty {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%,-50%);
+      text-align: center; color: rgba(255,255,255,0.25);
+    }
+    .empty .icon { font-size: 4em; margin-bottom: 12px; }
+    .sidebar {
+      width: 200px; flex-shrink: 0;
+      background: rgba(255,255,255,0.04);
+      border-left: 1px solid rgba(255,255,255,0.08);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 20px; gap: 16px;
+    }
+    .scan-hint { font-size: 1.1em; font-weight: 600; color: #a78bfa; text-align: center; }
+    .qr-box { background: white; padding: 12px; border-radius: 12px; }
+    .sidebar .label { font-size: 0.85em; color: rgba(255,255,255,0.5); text-align: center; line-height: 1.5; }
+    .url-text { font-size: 0.68em; color: rgba(255,255,255,0.35); text-align: center; word-break: break-all; }
+    footer {
+      padding: 8px 24px;
+      background: rgba(255,255,255,0.03);
+      border-top: 1px solid rgba(255,255,255,0.08);
+      display: flex; justify-content: space-between;
+      font-size: 0.78em; color: rgba(255,255,255,0.35); flex-shrink: 0;
+    }
+    .live-dot {
+      display: inline-block; width: 7px; height: 7px;
+      background: #4ade80; border-radius: 50%; margin-right: 5px;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  </style>
+</head>
+<body>
+<header>
+  <h1>☁️ 即時文字雲</h1>
+  <div class="stats">
+    <span>關鍵字種數：<strong id="uniqueCount">0</strong></span>
+    <span>總提交次數：<strong id="totalCount">0</strong></span>
+  </div>
+</header>
+
+<div class="main">
+  <div id="canvas-wrap">
+    <div class="empty" id="empty">
+      <div class="icon">🌫️</div>
+      <p>等待同學輸入關鍵字…</p>
+    </div>
+    <canvas id="cloud"></canvas>
+  </div>
+
+  <div class="sidebar">
+    <div class="scan-hint">📱 掃碼參與</div>
+    <div class="qr-box" id="qrcode"></div>
+    <div class="label">用手機掃描<br>輸入你的關鍵字</div>
+    <div class="url-text" id="urlText"></div>
+  </div>
+</div>
+
+<footer>
+  <span><span class="live-dot"></span>即時更新中</span>
+  <span>Firebase Firestore · teacherstudy-38c15</span>
+</footer>
+
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+  import { getFirestore, collection, onSnapshot }
+    from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+  // 學生輸入頁網址（GitHub Pages 部署後會是這個）
+  const INPUT_URL = window.location.origin + (window.location.pathname.replace('display.html','') || '/') + 'index.html';
+  document.getElementById('urlText').textContent = INPUT_URL;
+  new QRCode(document.getElementById('qrcode'), {
+    text: INPUT_URL, width: 148, height: 148,
+    colorDark: '#1a1a2e', colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+
+  const app = initializeApp({
+    apiKey: "AIzaSyA0HmfkjwykzJ4JyIqlhKUmMCKc9o6gdyY",
+    authDomain: "teacherstudy-38c15.firebaseapp.com",
+    projectId: "teacherstudy-38c15",
+    storageBucket: "teacherstudy-38c15.firebasestorage.app",
+    messagingSenderId: "768803476729",
+    appId: "1:768803476729:web:8463219b03f9312ac5fe28"
+  });
+  const db = getFirestore(app);
+
+  const COLORS = ['#a78bfa','#60a5fa','#34d399','#f472b6','#fbbf24',
+                  '#f87171','#38bdf8','#4ade80','#e879f9','#fb923c'];
+  let renderTimer = null;
+
+  function renderCloud(wordMap) {
+    const canvas = document.getElementById('cloud');
+    const wrap = document.getElementById('canvas-wrap');
+    canvas.width = wrap.offsetWidth;
+    canvas.height = wrap.offsetHeight;
+    const list = Object.entries(wordMap).sort((a,b) => b[1]-a[1]);
+    const max = list[0]?.[1] || 1;
+    document.getElementById('empty').style.display = list.length ? 'none' : 'flex';
+    if (!list.length) return;
+    WordCloud(canvas, {
+      list: list.map(([word, count]) => [word, Math.max(18, Math.round(18 + (count/max)*90))]),
+      gridSize: 8,
+      fontFamily: 'Segoe UI, Microsoft JhengHei, sans-serif',
+      color: (word) => { const i = list.findIndex(([w]) => w===word); return COLORS[i % COLORS.length]; },
+      rotateRatio: 0.25,
+      backgroundColor: 'transparent',
+      drawOutOfBound: false,
+    });
+  }
+
+  onSnapshot(collection(db, 'wordcloud_words'), (snap) => {
+    const wordMap = {}; let total = 0;
+    snap.forEach(doc => {
+      const w = doc.data().word;
+      if (w) { wordMap[w] = (wordMap[w]||0)+1; total++; }
+    });
+    document.getElementById('uniqueCount').textContent = Object.keys(wordMap).length;
+    document.getElementById('totalCount').textContent = total;
+    clearTimeout(renderTimer);
+    renderTimer = setTimeout(() => renderCloud(wordMap), 300);
+  });
+
+  window.addEventListener('resize', () => {
+    clearTimeout(renderTimer);
+    renderTimer = setTimeout(() => {
+      const c = document.getElementById('cloud'), w = document.getElementById('canvas-wrap');
+      c.width = w.offsetWidth; c.height = w.offsetHeight;
+    }, 200);
+  });
+</script>
+</body>
+</html>
