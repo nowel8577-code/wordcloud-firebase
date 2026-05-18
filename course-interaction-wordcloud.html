@@ -1,0 +1,182 @@
+﻿<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>課程互動文字雲</title>
+<style>
+  :root {
+    --sky:#56C1FF; --coral:#EC5B5B; --yellow:#F5B500; --peri:#8DA4E1;
+    --green:#50A262; --pink:#EB88B4; --orange:#F89B31; --cyan:#76E5E3;
+    --cream:#FFFBEB; --navy:#1E3A5F; --gray:#E2E8F0;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    background:
+      radial-gradient(circle at 12% 18%, rgba(255,251,235,.9) 0 7%, transparent 7.5%),
+      radial-gradient(circle at 86% 22%, rgba(118,229,227,.8) 0 6%, transparent 6.5%),
+      linear-gradient(135deg, var(--sky), #7ed7ff 42%, #bfeeff);
+    color: var(--navy);
+    font-family: "Microsoft JhengHei", "Comic Sans MS", "Segoe UI", sans-serif;
+  }
+  .poster {
+    width: min(1120px, 94vw);
+    aspect-ratio: 16 / 9;
+    position: relative;
+    overflow: hidden;
+    background: var(--cream);
+    border: 10px solid var(--navy);
+    border-radius: 8px;
+    box-shadow: 16px 18px 0 rgba(30,58,95,.22);
+  }
+  .poster:before, .poster:after {
+    content: "";
+    position: absolute;
+    width: 190px;
+    height: 42px;
+    background: repeating-linear-gradient(45deg, rgba(255,255,255,.45) 0 10px, rgba(245,181,0,.7) 10px 20px), var(--yellow);
+    opacity: .92;
+    transform: rotate(-8deg);
+    top: 24px;
+    left: 44px;
+    border: 3px dashed rgba(30,58,95,.35);
+  }
+  .poster:after {
+    left: auto;
+    right: 54px;
+    top: 38px;
+    transform: rotate(7deg);
+    background: repeating-linear-gradient(-45deg, rgba(255,255,255,.45) 0 10px, rgba(235,136,180,.7) 10px 20px), var(--pink);
+  }
+  .title {
+    position: absolute;
+    top: 58px;
+    left: 68px;
+    z-index: 2;
+    font-size: clamp(44px, 6vw, 82px);
+    line-height: 1;
+    font-weight: 900;
+    letter-spacing: 0;
+    text-shadow: 5px 5px 0 var(--yellow);
+  }
+  .subtitle {
+    position: absolute;
+    top: 150px;
+    left: 76px;
+    z-index: 2;
+    padding: 10px 18px;
+    background: var(--cyan);
+    border: 4px solid var(--navy);
+    border-radius: 8px;
+    transform: rotate(-2deg);
+    font-size: clamp(18px, 2vw, 28px);
+    font-weight: 800;
+  }
+  .cloud {
+    position: absolute;
+    left: 58px;
+    right: 356px;
+    top: 235px;
+    bottom: 58px;
+    background:
+      linear-gradient(90deg, transparent 0 96%, rgba(30,58,95,.05) 96% 100%),
+      var(--cream);
+    border: 6px solid var(--navy);
+    border-radius: 8px 18px 8px 22px;
+    clip-path: polygon(2% 5%, 16% 1%, 31% 4%, 47% 1%, 61% 6%, 78% 2%, 96% 7%, 98% 24%, 95% 43%, 99% 62%, 94% 93%, 77% 97%, 62% 94%, 46% 99%, 32% 95%, 15% 99%, 3% 92%, 6% 73%, 2% 55%, 5% 36%);
+    box-shadow: 10px 12px 0 rgba(80,162,98,.24);
+  }
+  .word { position: absolute; font-weight: 900; white-space: nowrap; line-height: 1; letter-spacing: 0; }
+  .w1 { left: 23%; top: 36%; font-size: clamp(54px, 7vw, 98px); color: var(--coral); transform: rotate(-4deg); text-shadow: 4px 4px 0 #ffd9a1; }
+  .w2 { left: 10%; top: 15%; font-size: clamp(34px, 4vw, 58px); color: var(--green); transform: rotate(5deg); }
+  .w3 { left: 55%; top: 15%; font-size: clamp(30px, 3.6vw, 52px); color: var(--peri); transform: rotate(-7deg); }
+  .w4 { left: 8%; top: 64%; font-size: clamp(28px, 3.5vw, 48px); color: var(--orange); transform: rotate(-6deg); }
+  .w5 { left: 55%; top: 68%; font-size: clamp(30px, 3.5vw, 50px); color: var(--pink); transform: rotate(6deg); }
+  .w6 { left: 36%; top: 12%; font-size: clamp(24px, 2.8vw, 40px); color: var(--navy); transform: rotate(2deg); }
+  .w7 { left: 37%; top: 73%; font-size: clamp(24px, 2.8vw, 40px); color: var(--yellow); text-shadow: 2px 2px 0 var(--navy); transform: rotate(-2deg); }
+  .w8 { left: 69%; top: 45%; font-size: clamp(22px, 2.5vw, 36px); color: var(--green); transform: rotate(8deg); }
+  .w9 { left: 9%; top: 43%; font-size: clamp(22px, 2.5vw, 34px); color: var(--peri); transform: rotate(-10deg); }
+  .w10 { left: 71%; top: 30%; font-size: clamp(20px, 2.4vw, 32px); color: var(--coral); transform: rotate(6deg); }
+  .dot, .star, .pencil { position: absolute; z-index: 3; }
+  .dot { width: 18px; height: 18px; border-radius: 50%; background: var(--yellow); border: 3px solid var(--navy); }
+  .d1 { left: 42%; top: 31%; } .d2 { left: 18%; top: 78%; background: var(--cyan); } .d3 { left: 82%; top: 62%; background: var(--pink); }
+  .star { width: 38px; height: 38px; background: var(--yellow); border: 3px solid var(--navy); clip-path: polygon(50% 0, 62% 34%, 98% 35%, 69% 56%, 79% 91%, 50% 70%, 21% 91%, 31% 56%, 2% 35%, 38% 34%); }
+  .s1 { left: 27%; top: 22%; transform: rotate(12deg); } .s2 { left: 64%; top: 80%; transform: rotate(-10deg); background: var(--orange); }
+  .qr-card {
+    position: absolute;
+    right: 58px;
+    bottom: 64px;
+    width: 265px;
+    padding: 18px 18px 16px;
+    background: white;
+    border: 6px solid var(--navy);
+    border-radius: 8px;
+    box-shadow: 10px 10px 0 rgba(236,91,91,.27);
+    transform: rotate(2deg);
+    text-align: center;
+  }
+  .qr-card img { width: 200px; height: 200px; image-rendering: pixelated; border: 8px solid var(--cream); }
+  .qr-title { margin-top: 8px; font-size: 26px; font-weight: 900; color: var(--coral); }
+  .qr-url { margin-top: 5px; font-size: 13px; line-height: 1.3; overflow-wrap: anywhere; color: var(--navy); font-weight: 700; }
+  .note {
+    position: absolute;
+    right: 74px;
+    top: 150px;
+    width: 260px;
+    padding: 14px 16px;
+    background: var(--yellow);
+    border: 5px solid var(--navy);
+    border-radius: 8px;
+    font-size: 24px;
+    line-height: 1.25;
+    font-weight: 900;
+    transform: rotate(-4deg);
+  }
+  .face {
+    position: absolute;
+    right: 296px;
+    top: 92px;
+    width: 86px;
+    height: 86px;
+    border-radius: 50% 45% 52% 42%;
+    background: var(--pink);
+    border: 5px solid var(--navy);
+    transform: rotate(-8deg);
+  }
+  .face:before { content: "•  •"; position: absolute; left: 18px; top: 18px; font-size: 28px; font-weight: 900; letter-spacing: 8px; }
+  .face:after { content: "︶"; position: absolute; left: 23px; top: 35px; font-size: 32px; font-weight: 900; }
+  @media print { body { background: white; } .poster { width: 100vw; box-shadow: none; } }
+</style>
+</head>
+<body>
+  <main class="poster" aria-label="課程互動文字雲海報">
+    <div class="title">課程互動</div>
+    <div class="subtitle">掃碼進入 · 一起回應</div>
+    <div class="face"></div>
+    <div class="note">把想法變成<br>今天的關鍵字！</div>
+    <section class="cloud" aria-label="文字雲">
+      <span class="word w1">課程互動</span>
+      <span class="word w2">提問</span>
+      <span class="word w3">分享</span>
+      <span class="word w4">討論</span>
+      <span class="word w5">合作</span>
+      <span class="word w6">思考</span>
+      <span class="word w7">回饋</span>
+      <span class="word w8">發表</span>
+      <span class="word w9">聆聽</span>
+      <span class="word w10">創意</span>
+      <span class="dot d1"></span><span class="dot d2"></span><span class="dot d3"></span>
+      <span class="star s1"></span><span class="star s2"></span>
+    </section>
+    <aside class="qr-card">
+      <img alt="課程互動 QR code" src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=12&data=https%3A%2F%2Fwww.mentimeter.com%2Fapp">
+      <div class="qr-title">掃碼互動</div>
+      <div class="qr-url">https://www.mentimeter.com/app</div>
+    </aside>
+  </main>
+</body>
+</html>
